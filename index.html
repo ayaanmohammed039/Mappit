@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5efe4" />
+    <meta
+      name="description"
+      content="Mappit helps people discover indie brands on a premium mobile-first map."
+    />
+    <title>Mappit</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f7ead6'/%3E%3Cstop offset='100%25' stop-color='%23efd3b0'/%3E%3C/linearGradient%3E%3ClinearGradient id='pin' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ea6b47'/%3E%3Cstop offset='100%25' stop-color='%23b64d32'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='128' height='128' rx='28' fill='url(%23bg)'/%3E%3Cpath d='M64 24c-18.8 0-34 15.2-34 34 0 25.1 28.7 47.6 32.4 50.4a2.6 2.6 0 0 0 3.2 0C69.3 105.6 98 83.1 98 58 98 39.2 82.8 24 64 24Z' fill='url(%23pin)'/%3E%3Ccircle cx='64' cy='58' r='13' fill='%23fff7ef'/%3E%3Cpath d='M46 88c5.4-5 12-7.5 18-7.5s12.6 2.5 18 7.5' fill='none' stroke='%23181512' stroke-linecap='round' stroke-width='5'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        --bg: #f5efe4;
+        --surface: rgba(255, 250, 243, 0.82);
+        --surface-strong: rgba(255, 252, 247, 0.95);
+        --surface-soft: rgba(252, 241, 228, 0.88);
+        --text: #181512;
+        --muted: #756a5d;
+        --line: rgba(73, 56, 36, 0.1);
+        --accent: #ea6b47;
+        --accent-strong: #cd5836;
+        --accent-soft: #f8d5c8;
+        --teal: #6ca9a4;
+        --shadow-soft: 0 18px 40px rgba(74, 46, 15, 0.1);
+        --shadow: 0 28px 60px rgba(74, 46, 15, 0.16);
+        --shadow-strong: 0 32px 80px rgba(59, 34, 14, 0.22);
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 12% 10%, rgba(255, 205, 161, 0.7), transparent 30%),
+          radial-gradient(circle at 88% 12%, rgba(106, 170, 168, 0.16), transparent 24%),
+          linear-gradient(180deg, #fbf7f1 0%, #efe3d1 55%, #eadcca 100%);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      body.is-loading {
+        overflow: hidden;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        z-index: 0;
+        pointer-events: none;
+        filter: blur(26px);
+      }
+
+      body::before {
+        width: 280px;
+        height: 280px;
+        top: 8%;
+        right: -64px;
+        border-radius: 50%;
+        background: rgba(255, 212, 186, 0.34);
+      }
+
+      body::after {
+        width: 240px;
+        height: 240px;
+        left: -72px;
+        bottom: 16%;
+        border-radius: 42% 58% 59% 41% / 54% 44% 56% 46%;
+        background: rgba(123, 188, 183, 0.16);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+        border: 0;
+        outline: 0;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .app-shell {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        padding: 20px 16px 96px;
+        opacity: 1;
+        transition: opacity 420ms ease;
+      }
+
+      body.is-loading .app-shell,
+      body.is-loading .app-nav {
+        opacity: 0;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.is-visible {
+        display: block;
+        animation: screen-fade 520ms var(--ease);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      .title-font,
+      .topbar h1,
+      .sheet-heading h2,
+      .brand-card h3,
+      .detail-hero__content h2,
+      .section-heading h3,
+      .install-banner__content h2,
+      .onboarding-hero h2,
+      .mock-install h3,
+      .splash-screen__title {
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+      }
+
+      .splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 18% 18%, rgba(255, 205, 161, 0.5), transparent 28%),
+          radial-gradient(circle at 82% 20%, rgba(105, 176, 172, 0.18), transparent 20%),
+          linear-gradient(180deg, #fbf6ee 0%, #efe1ce 60%, #e8d8c2 100%);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity 520ms var(--ease),
+          visibility 0s linear 520ms;
+      }
+
+      .splash-screen.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 520ms var(--ease);
+      }
+
+      .splash-screen.is-exiting {
+        opacity: 0;
+      }
+
+      .splash-screen__glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(28px);
+      }
+
+      .splash-screen__glow--a {
+        width: 260px;
+        height: 260px;
+        top: 8%;
+        right: -64px;
+        background: rgba(255, 214, 178, 0.42);
+      }
+
+      .splash-screen__glow--b {
+        width: 220px;
+        height: 220px;
+        left: -48px;
+        bottom: 12%;
+        background: rgba(114, 183, 177, 0.18);
+      }
+
+      .splash-screen__card {
+        position: relative;
+        z-index: 1;
+        width: min(100%, 420px);
+        padding: 28px 24px;
+        border-radius: 34px;
+        background: rgba(255, 251, 245, 0.78);
+        box-shadow:
+          0 34px 80px rgba(71, 43, 16, 0.18),
+          inset 0 1px 0 rgba(255, 255, 255, 0.64);
+        backdrop-filter: blur(22px);
+        text-align: center;
+        animation: splash-card-rise 820ms var(--ease);
+      }
+
+      .brand-icon-wrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 28px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.74), rgba(248, 228, 205, 0.9));
+        box-shadow:
+          0 20px 42px rgba(61, 40, 16, 0.14),
+          inset 0 0 0 1px rgba(85, 63, 40, 0.06);
+      }
+
+      .splash-screen__icon-wrap {
+        width: 92px;
+        height: 92px;
+        margin: 0 auto 18px;
+      }
+
+      .brand-icon {
+        width: 68px;
+        height: 68px;
+      }
+
+      .splash-screen__icon {
+        animation: float-drift 4s ease-in-out infinite;
+      }
+
+      .splash-screen__title {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 7vw, 2.8rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .splash-screen__copy {
+        margin: 0 0 20px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .splash-loader {
+        position: relative;
+        width: 100%;
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(79, 60, 39, 0.1);
+      }
+
+      .splash-loader__bar {
+        display: block;
+        width: 42%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ea6b47, #f4a56e);
+        box-shadow: 0 0 18px rgba(234, 107, 71, 0.24);
+        animation: splash-load 1.15s var(--ease) infinite;
+      }
+
+      .status-strip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        overflow-x: auto;
+        margin-bottom: 16px;
+        scrollbar-width: none;
+      }
+
+      .status-strip::-webkit-scrollbar,
+      .filters::-webkit-scrollbar,
+      .cards-row::-webkit-scrollbar {
+        display: none;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(255, 250, 243, 0.64);
+        box-shadow:
+          inset 0 0 0 1px rgba(85, 67, 43, 0.08),
+          0 12px 24px rgba(75, 48, 18, 0.06);
+        color: var(--text);
+        backdrop-filter: blur(16px);
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3cb894, #267d73);
+        box-shadow: 0 0 0 6px rgba(60, 184, 148, 0.14);
+        animation: pin-pulse 2.2s ease-in-out infinite;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: clamp(1.9rem, 4vw, 3.2rem);
+        line-height: 0.94;
+        max-width: 12ch;
+        letter-spacing: -0.04em;
+      }
+
+      .hero-subcopy {
+        max-width: 48ch;
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 1rem;
+      }
+
+      .install-banner {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 18px;
+        padding: 18px;
+        border-radius: 30px;
+        background:
+          radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 18%),
+          linear-gradient(135deg, rgba(255, 248, 239, 0.94), rgba(251, 239, 224, 0.84));
+        box-shadow:
+          0 24px 50px rgba(73, 46, 15, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.62);
+        backdrop-filter: blur(18px);
+        animation: content-lift 560ms var(--ease);
+      }
+
+      .install-banner[hidden] {
+        display: none;
+      }
+
+      .install-banner__icon-wrap {
+        width: 72px;
+        height: 72px;
+      }
+
+      .install-banner__icon {
+        width: 52px;
+        height: 52px;
+      }
+
+      .install-banner__content h2 {
+        margin: 0 0 8px;
+        font-size: 1.55rem;
+        letter-spacing: -0.03em;
+      }
+
+      .install-banner__content p:last-child {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .install-banner__actions {
+        display: grid;
+        gap: 10px;
+      }
+
+      .icon-button,
+      .ghost-button,
+      .filter-chip,
+      .save-button,
+      .map-pin,
+      .primary-button,
+      .back-button,
+      .card-link,
+      .app-nav__item {
+        cursor: pointer;
+        transition:
+          transform 260ms var(--ease),
+          box-shadow 260ms var(--ease),
+          background-color 220ms ease,
+          color 220ms ease,
+          opacity 220ms ease;
+      }
+
+      .icon-button,
+      .ghost-button,
+      .save-button,
+      .primary-button,
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+      }
+
+      .ghost-button {
+        padding: 10px 14px;
+        background: rgba(255, 250, 242, 0.78);
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+        backdrop-filter: blur(12px);
+      }
+
+      .primary-button {
+        width: 100%;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, var(--text), #312820);
+        color: #fff8ef;
+        box-shadow: 0 18px 32px rgba(24, 21, 18, 0.18);
+      }
+
+      .back-button {
+        padding: 12px 16px;
+        background: rgba(255, 250, 242, 0.82);
+        color: var(--text);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(16px);
+      }
+
+      .icon-button {
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 250, 242, 0.72);
+        box-shadow: var(--shadow-soft);
+        color: var(--text);
+        flex-shrink: 0;
+        backdrop-filter: blur(18px);
+      }
+
+      .icon-button span {
+        font-size: 0.86rem;
+        font-weight: 600;
+      }
+
+      .mock-install {
+        position: fixed;
+        left: 50%;
+        bottom: 98px;
+        z-index: 35;
+        width: min(92vw, 360px);
+        transform: translate(-50%, 24px);
+        padding: 16px;
+        border-radius: 24px;
+        background: rgba(30, 24, 21, 0.92);
+        color: #fff8ef;
+        box-shadow: 0 24px 48px rgba(18, 15, 12, 0.28);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          transform 320ms var(--ease),
+          opacity 320ms var(--ease),
+          visibility 0s linear 320ms;
+      }
+
+      .mock-install.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+        transition:
+          transform 320ms var(--ease),
+          opacity 320ms var(--ease);
+      }
+
+      .mock-install p {
+        margin: 0 0 12px;
+        color: rgba(255, 248, 239, 0.76);
+        line-height: 1.45;
+      }
+
+      .filters {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        margin-bottom: 16px;
+        scrollbar-width: none;
+      }
+
+      .filter-chip {
+        white-space: nowrap;
+        padding: 11px 16px;
+        border-radius: 999px;
+        background: rgba(255, 250, 242, 0.68);
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+        backdrop-filter: blur(14px);
+      }
+
+      .filter-chip.is-active {
+        background: linear-gradient(135deg, var(--text), #312820);
+        color: #fff8ef;
+        box-shadow: 0 16px 28px rgba(24, 21, 18, 0.18);
+      }
+
+      .map-layout {
+        display: grid;
+        gap: 14px;
+        min-height: calc(100vh - 182px);
+      }
+
+      .map-panel {
+        position: relative;
+        min-height: 48vh;
+      }
+
+      .map-surface {
+        position: relative;
+        overflow: hidden;
+        min-height: 100%;
+        border-radius: 36px;
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(118, 184, 181, 0.12), transparent 22%),
+          linear-gradient(180deg, #f7ecd8 0%, #ecdcc5 100%);
+        box-shadow: var(--shadow);
+        isolation: isolate;
+      }
+
+      .map-surface::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent 30%),
+          radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.26), transparent 12%);
+        pointer-events: none;
+      }
+
+      .map-grid,
+      .map-road,
+      .map-water,
+      .pin-layer,
+      .map-hud,
+      .map-orb {
+        position: absolute;
+        inset: 0;
+      }
+
+      .map-grid {
+        background-image:
+          linear-gradient(rgba(132, 112, 80, 0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(132, 112, 80, 0.08) 1px, transparent 1px);
+        background-size: 72px 72px;
+        opacity: 0.8;
+      }
+
+      .map-road {
+        border-radius: 999px;
+        background: rgba(255, 250, 242, 0.86);
+        box-shadow:
+          inset 0 0 0 1px rgba(119, 97, 64, 0.05),
+          0 10px 20px rgba(93, 74, 48, 0.03);
+      }
+
+      .map-road-a {
+        width: 180%;
+        height: 24px;
+        top: 22%;
+        left: -32%;
+        transform: rotate(22deg);
+      }
+
+      .map-road-b {
+        width: 170%;
+        height: 18px;
+        top: 58%;
+        left: -26%;
+        transform: rotate(-16deg);
+      }
+
+      .map-road-c {
+        width: 18px;
+        height: 140%;
+        top: -12%;
+        left: 58%;
+        transform: rotate(7deg);
+      }
+
+      .map-orb {
+        inset: auto;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: blur(8px);
+      }
+
+      .map-orb-a {
+        width: 140px;
+        height: 140px;
+        top: 8%;
+        left: 10%;
+        background: rgba(255, 230, 193, 0.4);
+        animation: float-drift 11s ease-in-out infinite;
+      }
+
+      .map-orb-b {
+        width: 120px;
+        height: 120px;
+        right: 10%;
+        bottom: 22%;
+        background: rgba(126, 186, 183, 0.18);
+        animation: float-drift 9s ease-in-out infinite reverse;
+      }
+
+      .map-water {
+        inset: auto 8% 10% auto;
+        width: 34%;
+        height: 22%;
+        border-radius: 38% 62% 59% 41% / 47% 35% 65% 53%;
+        background:
+          radial-gradient(circle at top right, rgba(255, 255, 255, 0.34), transparent 22%),
+          linear-gradient(135deg, rgba(105, 177, 217, 0.54), rgba(150, 214, 236, 0.32));
+        filter: blur(1px);
+        animation: float-drift 8s ease-in-out infinite;
+      }
+
+      .map-hud {
+        inset: 14px 14px auto 14px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .map-hud__card {
+        min-width: 128px;
+        padding: 12px 14px;
+        border-radius: 20px;
+        background: rgba(255, 251, 246, 0.72);
+        box-shadow:
+          inset 0 0 0 1px rgba(89, 68, 43, 0.08),
+          0 16px 28px rgba(61, 41, 14, 0.1);
+        backdrop-filter: blur(16px);
+      }
+
+      .map-hud__card--accent {
+        background: linear-gradient(135deg, rgba(33, 28, 23, 0.92), rgba(59, 45, 34, 0.82));
+        color: #fff7ef;
+      }
+
+      .map-hud__label {
+        display: block;
+        margin-bottom: 6px;
+        opacity: 0.72;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .map-pin {
+        position: absolute;
+        transform: translate(-50%, -100%);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px 8px 8px;
+        border-radius: 999px;
+        background: rgba(255, 252, 247, 0.84);
+        box-shadow:
+          0 18px 34px rgba(49, 35, 20, 0.14),
+          inset 0 0 0 1px rgba(88, 66, 39, 0.08);
+        color: var(--text);
+        backdrop-filter: blur(18px);
+        animation: pin-rise 520ms var(--ease) both;
+        animation-delay: calc(var(--pin-order, 0) * 70ms);
+      }
+
+      .map-pin:hover,
+      .map-pin:focus-visible,
+      .map-pin.is-active {
+        background: linear-gradient(135deg, var(--text), #30261f);
+        color: #fff8ef;
+        transform: translate(-50%, -106%) scale(1.02);
+        box-shadow:
+          0 24px 42px rgba(33, 24, 15, 0.26),
+          0 0 0 10px rgba(234, 107, 71, 0.08);
+      }
+
+      .map-pin__dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 8px rgba(234, 107, 71, 0.16);
+        animation: pin-pulse 2.4s ease-in-out infinite;
+      }
+
+      .map-pin__label {
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .sheet {
+        position: relative;
+        margin-top: -92px;
+        padding: 14px 14px 8px;
+        border-radius: 28px 28px 0 0;
+        background:
+          linear-gradient(180deg, rgba(255, 252, 246, 0.94), rgba(255, 248, 239, 0.88));
+        backdrop-filter: blur(20px);
+        box-shadow:
+          0 -12px 30px rgba(54, 39, 18, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      }
+
+      .sheet-handle {
+        width: 52px;
+        height: 5px;
+        margin: 0 auto 12px;
+        border-radius: 999px;
+        background: rgba(73, 61, 48, 0.16);
+      }
+
+      .sheet-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .sheet-heading h2 {
+        font-size: 1.55rem;
+      }
+
+      .cards-row {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(270px, 82%);
+        gap: 14px;
+        overflow-x: auto;
+        padding: 6px 2px 14px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .brand-card {
+        display: grid;
+        grid-template-rows: 155px 1fr;
+        border-radius: 24px;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(255, 247, 236, 0.96));
+        box-shadow:
+          inset 0 0 0 1px rgba(91, 68, 39, 0.06),
+          0 18px 30px rgba(90, 63, 25, 0.08);
+        scroll-snap-align: start;
+        transition:
+          transform 320ms var(--ease),
+          box-shadow 320ms var(--ease),
+          filter 320ms var(--ease);
+        animation: card-rise 560ms var(--ease) both;
+        animation-delay: calc(var(--card-order, 0) * 80ms);
+      }
+
+      .brand-card.is-active {
+        transform: translateY(-8px) scale(1.01);
+        box-shadow:
+          inset 0 0 0 1px rgba(91, 68, 39, 0.06),
+          0 28px 52px rgba(62, 42, 15, 0.18);
+      }
+
+      .brand-card__content {
+        padding: 16px;
+      }
+
+      .brand-card__topline,
+      .brand-card__meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .brand-card__tag {
+        padding: 8px 11px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent-soft), #f8e5dc);
+        color: #8e3f27;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .save-button {
+        min-width: 58px;
+        height: 38px;
+        padding: 0 12px;
+        background: rgba(244, 236, 224, 0.9);
+        color: var(--text);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+      }
+
+      .save-button.is-saved {
+        background: linear-gradient(135deg, var(--text), #312820);
+        color: #fff8ef;
+      }
+
+      .brand-card h3 {
+        margin: 12px 0 8px;
+        font-size: 1.32rem;
+      }
+
+      .brand-card__description,
+      .detail-description,
+      .detail-section p {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .brand-card__description {
+        margin: 0 0 16px;
+      }
+
+      .brand-card__meta {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .card-link {
+        width: 100%;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--text), #312820);
+        color: #fff8ef;
+        box-shadow: 0 14px 26px rgba(24, 21, 18, 0.16);
+      }
+
+      .detail-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .detail-screen,
+      .onboarding-screen {
+        display: grid;
+        gap: 18px;
+        padding-bottom: 24px;
+        animation: content-lift 560ms var(--ease);
+      }
+
+      .detail-hero,
+      .detail-section,
+      .detail-pill,
+      .onboarding-hero,
+      .onboarding-form {
+        backdrop-filter: blur(18px);
+      }
+
+      .detail-hero {
+        overflow: hidden;
+        border-radius: 34px;
+        background: rgba(255, 250, 242, 0.76);
+        box-shadow: var(--shadow);
+      }
+
+      .detail-hero__art {
+        min-height: 260px;
+        animation: float-drift 10s ease-in-out infinite;
+      }
+
+      .detail-hero__content {
+        padding: 20px 18px 22px;
+      }
+
+      .detail-hero__content h2 {
+        font-size: clamp(2rem, 7vw, 3.4rem);
+        line-height: 0.96;
+        margin-bottom: 10px;
+      }
+
+      .detail-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .detail-pill {
+        padding: 14px 16px;
+        border-radius: 20px;
+        background: rgba(255, 250, 242, 0.72);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+      }
+
+      .detail-pill:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .detail-section {
+        padding: 20px 18px;
+        border-radius: 26px;
+        background: rgba(255, 250, 242, 0.74);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+      }
+
+      .section-heading {
+        margin-bottom: 12px;
+      }
+
+      .section-heading h3 {
+        font-size: 1.45rem;
+      }
+
+      .detail-highlights {
+        display: grid;
+        gap: 10px;
+      }
+
+      .detail-highlight {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(248, 231, 215, 0.92), rgba(244, 236, 224, 0.88));
+      }
+
+      .detail-actions,
+      .onboarding-actions,
+      .mock-install__actions {
+        display: grid;
+        gap: 10px;
+      }
+
+      .onboarding-hero,
+      .onboarding-form {
+        padding: 20px 18px;
+        border-radius: 28px;
+        background: rgba(255, 250, 242, 0.8);
+        box-shadow: var(--shadow);
+      }
+
+      .onboarding-hero h2 {
+        font-size: clamp(1.9rem, 6vw, 3rem);
+        line-height: 1;
+        max-width: 12ch;
+        letter-spacing: -0.04em;
+      }
+
+      .progress-block {
+        margin-top: 18px;
+      }
+
+      .progress-copy {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(83, 66, 46, 0.1);
+      }
+
+      .progress-bar__fill {
+        width: 33.333%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ea6b47, #f3a266);
+        box-shadow: 0 0 18px rgba(234, 107, 71, 0.32);
+        transition: width 280ms var(--ease);
+      }
+
+      .form-step {
+        display: none;
+      }
+
+      .form-step.is-visible {
+        display: grid;
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field span {
+        font-size: 0.95rem;
+        font-weight: 500;
+      }
+
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 18px;
+        color: var(--text);
+        background: rgba(244, 236, 224, 0.92);
+        box-shadow: inset 0 0 0 1px rgba(83, 66, 46, 0.08);
+        transition: box-shadow 220ms ease, background-color 220ms ease;
+      }
+
+      .field textarea {
+        min-height: 112px;
+        resize: vertical;
+      }
+
+      .field input:focus,
+      .field select:focus,
+      .field textarea:focus {
+        background: rgba(248, 242, 233, 0.98);
+        box-shadow:
+          inset 0 0 0 1px rgba(83, 66, 46, 0.08),
+          0 0 0 4px rgba(234, 107, 71, 0.14);
+      }
+
+      .field input.is-invalid,
+      .field select.is-invalid,
+      .field textarea.is-invalid {
+        box-shadow: inset 0 0 0 2px rgba(207, 79, 50, 0.5);
+      }
+
+      .review-card {
+        display: grid;
+        gap: 10px;
+        padding: 16px;
+        border-radius: 22px;
+        background:
+          linear-gradient(135deg, rgba(244, 236, 224, 0.96), rgba(252, 242, 231, 0.92));
+        color: var(--muted);
+      }
+
+      .review-card strong {
+        color: var(--text);
+      }
+
+      .form-feedback {
+        min-height: 1.3em;
+        margin: 16px 0 0;
+        color: #b4482e;
+      }
+
+      #submitOnboardingButton {
+        display: none;
+      }
+
+      .onboarding-form.is-final-step #nextStepButton {
+        display: none;
+      }
+
+      .onboarding-form.is-final-step #submitOnboardingButton {
+        display: inline-flex;
+      }
+
+      .app-nav {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        width: min(92vw, 420px);
+        padding: 10px;
+        border-radius: 26px;
+        background: rgba(29, 24, 21, 0.84);
+        box-shadow: 0 26px 50px rgba(16, 14, 12, 0.24);
+        transform: translateX(-50%);
+        backdrop-filter: blur(18px);
+      }
+
+      .app-nav__item {
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: transparent;
+        color: rgba(255, 248, 239, 0.64);
+      }
+
+      .app-nav__item.is-active {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+        color: #fff8ef;
+        transform: translateY(-1px);
+      }
+
+      .app-nav__label {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .icon-button:hover,
+      .ghost-button:hover,
+      .primary-button:hover,
+      .back-button:hover,
+      .card-link:hover,
+      .save-button:hover,
+      .app-nav__item:hover {
+        transform: translateY(-2px);
+      }
+
+      .filter-chip:hover {
+        transform: translateY(-1px);
+      }
+
+      @media (min-width: 768px) {
+        .app-shell {
+          max-width: 1380px;
+          margin: 0 auto;
+          padding: 26px 26px 110px;
+        }
+
+        .install-banner {
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+        }
+
+        .install-banner__actions {
+          min-width: 180px;
+        }
+
+        .map-layout {
+          min-height: calc(100vh - 190px);
+        }
+
+        .map-panel {
+          min-height: 58vh;
+        }
+
+        .sheet {
+          margin-top: -76px;
+          padding: 18px 18px 10px;
+        }
+
+        .cards-row {
+          grid-auto-columns: minmax(300px, 34%);
+        }
+
+        .detail-screen {
+          grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+          align-items: start;
+        }
+
+        .detail-hero,
+        .detail-section:first-of-type {
+          grid-column: 1 / 2;
+        }
+
+        .detail-meta,
+        .detail-section:nth-of-type(2),
+        .detail-actions {
+          grid-column: 2 / 3;
+        }
+
+        .detail-actions {
+          align-self: end;
+        }
+
+        .onboarding-screen {
+          grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+          align-items: start;
+        }
+      }
+
+      @media (min-width: 1100px) {
+        .app-shell {
+          padding: 32px 28px 118px;
+        }
+
+        .map-layout {
+          grid-template-columns: minmax(0, 1.3fr) minmax(360px, 480px);
+          align-items: stretch;
+          min-height: calc(100vh - 178px);
+        }
+
+        .sheet {
+          margin-top: 0;
+          border-radius: 32px;
+          padding: 18px;
+          min-height: 100%;
+        }
+
+        .sheet-handle {
+          display: none;
+        }
+
+        .cards-row {
+          grid-auto-flow: row;
+          grid-auto-columns: unset;
+          grid-template-columns: 1fr;
+          overflow-y: auto;
+          overflow-x: hidden;
+          max-height: calc(100vh - 290px);
+          padding-right: 4px;
+          scroll-snap-type: y proximity;
+        }
+
+        .brand-card {
+          grid-template-columns: 148px 1fr;
+          grid-template-rows: none;
+          min-height: 170px;
+        }
+
+        .detail-screen {
+          grid-template-columns: minmax(0, 1.2fr) minmax(360px, 420px);
+          gap: 22px;
+        }
+
+        .detail-hero__art {
+          min-height: 340px;
+        }
+
+        .onboarding-screen {
+          grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+          gap: 22px;
+        }
+      }
+
+      @keyframes content-lift {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes screen-fade {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.995);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes card-rise {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.98);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes pin-rise {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -94%) scale(0.92);
+        }
+
+        to {
+          opacity: 1;
+          transform: translate(-50%, -100%) scale(1);
+        }
+      }
+
+      @keyframes pin-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 8px rgba(234, 107, 71, 0.14);
+        }
+
+        50% {
+          box-shadow: 0 0 0 14px rgba(234, 107, 71, 0.05);
+        }
+      }
+
+      @keyframes float-drift {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+
+        50% {
+          transform: translate3d(0, -6px, 0) scale(1.02);
+        }
+      }
+
+      @keyframes splash-card-rise {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.98);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes splash-load {
+        0% {
+          transform: translateX(-140%);
+        }
+
+        100% {
+          transform: translateX(320%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="is-loading">
+    <div class="splash-screen is-visible" id="splashScreen" aria-hidden="true">
+      <div class="splash-screen__glow splash-screen__glow--a"></div>
+      <div class="splash-screen__glow splash-screen__glow--b"></div>
+      <div class="splash-screen__card">
+        <div class="brand-icon-wrap splash-screen__icon-wrap">
+          <svg class="brand-icon splash-screen__icon" viewBox="0 0 128 128" aria-hidden="true">
+            <defs>
+              <linearGradient id="iconBgSplash" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f7ead6"></stop>
+                <stop offset="100%" stop-color="#efd3b0"></stop>
+              </linearGradient>
+              <linearGradient id="iconPinSplash" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ea6b47"></stop>
+                <stop offset="100%" stop-color="#b64d32"></stop>
+              </linearGradient>
+            </defs>
+            <rect width="128" height="128" rx="28" fill="url(#iconBgSplash)"></rect>
+            <path
+              d="M64 24c-18.8 0-34 15.2-34 34 0 25.1 28.7 47.6 32.4 50.4a2.6 2.6 0 0 0 3.2 0C69.3 105.6 98 83.1 98 58 98 39.2 82.8 24 64 24Z"
+              fill="url(#iconPinSplash)"
+            ></path>
+            <circle cx="64" cy="58" r="13" fill="#fff7ef"></circle>
+            <path
+              d="M46 88c5.4-5 12-7.5 18-7.5s12.6 2.5 18 7.5"
+              fill="none"
+              stroke="#181512"
+              stroke-linecap="round"
+              stroke-width="5"
+            ></path>
+          </svg>
+        </div>
+        <p class="eyebrow">Launching Mappit</p>
+        <h1 class="splash-screen__title">Discover indie brands with a calmer map.</h1>
+        <p class="splash-screen__copy">Loading your curated city edit, pickup timings, and saved spots.</p>
+        <div class="splash-loader" aria-label="Loading">
+          <span class="splash-loader__bar"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <section class="view is-visible" id="homeView" aria-label="Map discovery view">
+        <section class="status-strip" aria-label="Live city status">
+          <div class="status-pill">
+            <span class="status-dot"></span>
+            <span>72 indie spots live now</span>
+          </div>
+          <div class="status-pill">Curated for Central City</div>
+        </section>
+
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Indie brands nearby</p>
+            <h1>Discover the city, one thoughtful stop at a time.</h1>
+            <p class="hero-subcopy">
+              A map-first guide to small brands with pickup-ready timing, editorial curation, and a calmer way to explore.
+            </p>
+          </div>
+          <div class="topbar-actions">
+            <button class="ghost-button install-button" id="installButton" type="button">Install</button>
+            <button class="ghost-button" id="openOnboardingButton" type="button">Add brand</button>
+            <button class="icon-button" id="savedSummaryButton" type="button" aria-label="Saved brands">
+              <span>Save</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="install-banner" id="installBanner" aria-label="Install app">
+          <div class="brand-icon-wrap install-banner__icon-wrap">
+            <svg class="brand-icon install-banner__icon" viewBox="0 0 128 128" aria-hidden="true">
+              <defs>
+                <linearGradient id="iconBgBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#f7ead6"></stop>
+                  <stop offset="100%" stop-color="#efd3b0"></stop>
+                </linearGradient>
+                <linearGradient id="iconPinBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ea6b47"></stop>
+                  <stop offset="100%" stop-color="#b64d32"></stop>
+                </linearGradient>
+              </defs>
+              <rect width="128" height="128" rx="28" fill="url(#iconBgBanner)"></rect>
+              <path
+                d="M64 24c-18.8 0-34 15.2-34 34 0 25.1 28.7 47.6 32.4 50.4a2.6 2.6 0 0 0 3.2 0C69.3 105.6 98 83.1 98 58 98 39.2 82.8 24 64 24Z"
+                fill="url(#iconPinBanner)"
+              ></path>
+              <circle cx="64" cy="58" r="13" fill="#fff7ef"></circle>
+              <path
+                d="M46 88c5.4-5 12-7.5 18-7.5s12.6 2.5 18 7.5"
+                fill="none"
+                stroke="#181512"
+                stroke-linecap="round"
+                stroke-width="5"
+              ></path>
+            </svg>
+          </div>
+          <div class="install-banner__content">
+            <p class="eyebrow">Install the app</p>
+            <h2>Keep Mappit on your home screen</h2>
+            <p>Open instantly, browse offline, and enjoy a cleaner full-screen mobile experience.</p>
+          </div>
+          <div class="install-banner__actions">
+            <button class="primary-button install-banner__button" id="installBannerButton" type="button">Install now</button>
+            <button class="ghost-button install-banner__dismiss" id="dismissInstallBannerButton" type="button">Maybe later</button>
+          </div>
+        </section>
+
+        <section class="filters" aria-label="Brand filters">
+          <button class="filter-chip is-active" type="button" data-filter="all">All</button>
+          <button class="filter-chip" type="button" data-filter="food">Food</button>
+          <button class="filter-chip" type="button" data-filter="drinks">Drinks</button>
+          <button class="filter-chip" type="button" data-filter="fashion">Fashion</button>
+          <button class="filter-chip" type="button" data-filter="pickup">Pickup</button>
+        </section>
+
+        <main class="map-layout">
+          <section class="map-panel" aria-label="Brand map">
+            <div class="map-surface">
+              <div class="map-orb map-orb-a"></div>
+              <div class="map-orb map-orb-b"></div>
+              <div class="map-grid"></div>
+              <div class="map-road map-road-a"></div>
+              <div class="map-road map-road-b"></div>
+              <div class="map-road map-road-c"></div>
+              <div class="map-water"></div>
+              <div class="map-hud">
+                <div class="map-hud__card">
+                  <span class="map-hud__label">Curated radius</span>
+                  <strong>15 min walk</strong>
+                </div>
+                <div class="map-hud__card map-hud__card--accent">
+                  <span class="map-hud__label">Fast pickup</span>
+                  <strong>8 brands</strong>
+                </div>
+              </div>
+              <div class="pin-layer" id="pinLayer"></div>
+            </div>
+          </section>
+
+          <section class="sheet" aria-label="Nearby brands">
+            <div class="sheet-handle"></div>
+            <div class="sheet-heading">
+              <div>
+                <p class="eyebrow">Featured right now</p>
+                <h2>Scroll brands</h2>
+              </div>
+              <button class="ghost-button" id="seeAllButton" type="button">See all</button>
+            </div>
+            <div class="cards-row" id="cardsRow"></div>
+          </section>
+        </main>
+      </section>
+
+      <section class="view" id="detailView" aria-label="Brand detail view" aria-hidden="true">
+        <header class="detail-topbar">
+          <button class="back-button" id="backButton" type="button" aria-label="Back to map">Back</button>
+          <button class="icon-button" id="detailSaveButton" type="button" aria-label="Save brand">Save</button>
+        </header>
+
+        <main class="detail-screen">
+          <section class="detail-hero">
+            <div class="detail-hero__art" id="detailArt"></div>
+            <div class="detail-hero__content">
+              <p class="eyebrow" id="detailCategory"></p>
+              <h2 id="detailName"></h2>
+              <p class="detail-description" id="detailDescription"></p>
+            </div>
+          </section>
+
+          <section class="detail-meta">
+            <div class="detail-pill" id="detailDistance"></div>
+            <div class="detail-pill" id="detailPickup"></div>
+            <div class="detail-pill" id="detailArea"></div>
+          </section>
+
+          <section class="detail-section">
+            <div class="section-heading">
+              <p class="eyebrow">About the brand</p>
+              <h3>Built with a point of view</h3>
+            </div>
+            <p id="detailStory"></p>
+          </section>
+
+          <section class="detail-section">
+            <div class="section-heading">
+              <p class="eyebrow">Highlights</p>
+              <h3>Why locals stop here</h3>
+            </div>
+            <div class="detail-highlights" id="detailHighlights"></div>
+          </section>
+
+          <section class="detail-section detail-actions">
+            <button class="primary-button" id="visitButton" type="button">Plan pickup</button>
+            <button class="ghost-button" id="detailOnboardingButton" type="button">List your brand</button>
+            <button class="ghost-button" id="closeDetailButton" type="button">Back to map</button>
+          </section>
+        </main>
+      </section>
+      <section class="view" id="onboardingView" aria-label="Brand onboarding view" aria-hidden="true">
+        <header class="detail-topbar">
+          <button class="back-button" id="onboardingBackButton" type="button" aria-label="Back">Back</button>
+          <p class="eyebrow">Brand onboarding</p>
+        </header>
+
+        <main class="onboarding-screen">
+          <section class="onboarding-hero">
+            <div>
+              <p class="eyebrow">Join the map</p>
+              <h2>Tell shoppers what makes your brand worth the stop.</h2>
+            </div>
+            <div class="progress-block">
+              <div class="progress-copy">
+                <span id="onboardingStepLabel">Step 1 of 3</span>
+                <span id="onboardingStepTitle">Basics</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-bar__fill" id="progressFill"></div>
+              </div>
+            </div>
+          </section>
+
+          <form class="onboarding-form" id="onboardingForm" novalidate>
+            <section class="form-step is-visible" data-step="0">
+              <div class="section-heading">
+                <p class="eyebrow">Step 1</p>
+                <h3>Brand basics</h3>
+              </div>
+              <label class="field">
+                <span>Brand name</span>
+                <input type="text" name="brandName" placeholder="Studio name or shop name" required />
+              </label>
+              <label class="field">
+                <span>Category</span>
+                <select name="category" required>
+                  <option value="">Choose a category</option>
+                  <option value="food">Food</option>
+                  <option value="drinks">Drinks</option>
+                  <option value="fashion">Fashion</option>
+                  <option value="pickup">Pickup</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Neighborhood</span>
+                <input type="text" name="area" placeholder="Old Quarter, Studio Row..." required />
+              </label>
+            </section>
+
+            <section class="form-step" data-step="1">
+              <div class="section-heading">
+                <p class="eyebrow">Step 2</p>
+                <h3>Customer experience</h3>
+              </div>
+              <label class="field">
+                <span>Short description</span>
+                <textarea name="description" rows="4" placeholder="What do people discover when they visit?" required></textarea>
+              </label>
+              <label class="field">
+                <span>Pickup details</span>
+                <input type="text" name="pickup" placeholder="Pickup in 20 min, Walk-in only..." required />
+              </label>
+              <label class="field">
+                <span>Signature highlight</span>
+                <input type="text" name="highlight" placeholder="Best seller, service, or atmosphere" required />
+              </label>
+            </section>
+
+            <section class="form-step" data-step="2">
+              <div class="section-heading">
+                <p class="eyebrow">Step 3</p>
+                <h3>Contact and review</h3>
+              </div>
+              <label class="field">
+                <span>Contact name</span>
+                <input type="text" name="contactName" placeholder="Founder or store manager" required />
+              </label>
+              <label class="field">
+                <span>Email</span>
+                <input type="email" name="email" placeholder="name@brand.com" required />
+              </label>
+              <label class="field">
+                <span>Instagram or website</span>
+                <input type="text" name="link" placeholder="@brand or https://brand.com" required />
+              </label>
+              <div class="review-card" id="reviewCard"></div>
+            </section>
+
+            <p class="form-feedback" id="formFeedback" aria-live="polite"></p>
+
+            <div class="onboarding-actions">
+              <button class="ghost-button" id="prevStepButton" type="button">Previous</button>
+              <button class="primary-button" id="nextStepButton" type="button">Next</button>
+              <button class="primary-button" id="submitOnboardingButton" type="submit">Submit brand</button>
+            </div>
+          </form>
+        </main>
+      </section>
+    </div>
+
+    <nav class="app-nav" aria-label="Primary">
+      <button class="app-nav__item is-active" type="button" data-target-view="home"><span class="app-nav__label">Discover</span></button>
+      <button class="app-nav__item" type="button" data-target-view="detail"><span class="app-nav__label">Detail</span></button>
+      <button class="app-nav__item" type="button" data-target-view="onboarding"><span class="app-nav__label">Onboard</span></button>
+    </nav>
+
+    <div class="mock-install" id="mockInstallPrompt" aria-live="polite">
+      <h3>Install Mappit</h3>
+      <p>This standalone file cannot use a real browser install prompt, so this simulates the install flow. Add it to your device shortcuts or browser favorites for quick access.</p>
+      <div class="mock-install__actions">
+        <button class="primary-button" id="mockInstallConfirmButton" type="button">Got it</button>
+        <button class="ghost-button" id="mockInstallDismissButton" type="button">Close</button>
+      </div>
+    </div>
+
+    <template id="pinTemplate">
+      <button class="map-pin" type="button">
+        <span class="map-pin__dot"></span>
+        <span class="map-pin__label"></span>
+      </button>
+    </template>
+
+    <template id="cardTemplate">
+      <article class="brand-card">
+        <div class="brand-card__image"></div>
+        <div class="brand-card__content">
+          <div class="brand-card__topline">
+            <span class="brand-card__tag"></span>
+            <button class="save-button" type="button" aria-label="Save brand">Save</button>
+          </div>
+          <h3></h3>
+          <p class="brand-card__description"></p>
+          <div class="brand-card__meta">
+            <span class="brand-card__distance"></span>
+            <span class="brand-card__pickup"></span>
+          </div>
+          <button class="card-link" type="button">View details</button>
+        </div>
+      </article>
+    </template>
+
+    <script>
+      const brands = [
+        {
+          id: "cinder",
+          name: "Cinder Bakery",
+          category: "food",
+          description: "Wood-fired pastries, slow-fermented loaves, and a tiny breakfast counter.",
+          story:
+            "Cinder started with a single oven and a weekend line. The menu stays tight, the butter stays cultured, and the team bakes in small batches all morning.",
+          highlights: ["Morning buns worth the detour", "Pickup shelves refreshed every hour", "Neighborhood coffee pairing"],
+          distance: "0.3 mi",
+          pickup: "Pickup in 12 min",
+          area: "Old Quarter",
+          x: 34,
+          y: 33,
+          accent: "linear-gradient(120deg, #d69d55, #8a4f2a 80%)",
+        },
+        {
+          id: "drift",
+          name: "Drift Elixirs",
+          category: "drinks",
+          description: "Botanical sodas and seasonal tonics poured from a compact corner bar.",
+          story:
+            "Drift mixes low-sugar sodas with bright citrus, herbs, and tea infusions. Every release is seasonal, and the small format keeps the experience personal.",
+          highlights: ["Zero-proof flight menu", "House-made citrus syrups", "Late afternoon refill window"],
+          distance: "0.5 mi",
+          pickup: "Walk-in only",
+          area: "Canal Side",
+          x: 60,
+          y: 21,
+          accent: "linear-gradient(120deg, #8ab5a0, #2a5d58 80%)",
+        },
+        {
+          id: "sable",
+          name: "Sable Atelier",
+          category: "fashion",
+          description: "Small-batch garments, natural dyes, and tailoring made for repeat wear.",
+          story:
+            "Sable designs for longevity: fewer drops, stronger fabrics, and in-house tailoring that helps every piece earn a second life in your closet.",
+          highlights: ["Tailoring appointments on weekends", "Plant-dyed capsule pieces", "Repair-first philosophy"],
+          distance: "0.8 mi",
+          pickup: "Pickup tomorrow",
+          area: "Studio Row",
+          x: 72,
+          y: 46,
+          accent: "linear-gradient(120deg, #c9a6b8, #5d3b54 80%)",
+        },
+        {
+          id: "parcel",
+          name: "Parcel Pantry",
+          category: "pickup",
+          description: "Prepared lunches, pantry staples, and neighborhood pickup lockers.",
+          story:
+            "Parcel Pantry turns weekday pickup into something calmer: prepped meals, pantry staples, and compact lockers that stay stocked for the evening rush.",
+          highlights: ["Fast pickup lane", "Rotating lunch sets", "Family-size pantry bundles"],
+          distance: "1.1 mi",
+          pickup: "Pickup in 8 min",
+          area: "Market North",
+          x: 44,
+          y: 66,
+          accent: "linear-gradient(120deg, #8fb4d9, #315274 80%)",
+        },
+      ];
+
+      const SAVED_BRANDS_KEY = "mappit.savedBrands";
+      const INSTALL_BANNER_DISMISSED_KEY = "mappit.installBannerDismissed";
+
+      const splashScreen = document.querySelector("#splashScreen");
+      const homeView = document.querySelector("#homeView");
+      const detailView = document.querySelector("#detailView");
+      const onboardingView = document.querySelector("#onboardingView");
+      const cardsRow = document.querySelector("#cardsRow");
+      const pinLayer = document.querySelector("#pinLayer");
+      const cardTemplate = document.querySelector("#cardTemplate");
+      const pinTemplate = document.querySelector("#pinTemplate");
+      const filterButtons = [...document.querySelectorAll(".filter-chip")];
+      const backButton = document.querySelector("#backButton");
+      const closeDetailButton = document.querySelector("#closeDetailButton");
+      const detailSaveButton = document.querySelector("#detailSaveButton");
+      const detailArt = document.querySelector("#detailArt");
+      const detailCategory = document.querySelector("#detailCategory");
+      const detailName = document.querySelector("#detailName");
+      const detailDescription = document.querySelector("#detailDescription");
+      const detailDistance = document.querySelector("#detailDistance");
+      const detailPickup = document.querySelector("#detailPickup");
+      const detailArea = document.querySelector("#detailArea");
+      const detailStory = document.querySelector("#detailStory");
+      const detailHighlights = document.querySelector("#detailHighlights");
+      const visitButton = document.querySelector("#visitButton");
+      const openOnboardingButton = document.querySelector("#openOnboardingButton");
+      const detailOnboardingButton = document.querySelector("#detailOnboardingButton");
+      const onboardingBackButton = document.querySelector("#onboardingBackButton");
+      const onboardingForm = document.querySelector("#onboardingForm");
+      const formSteps = [...document.querySelectorAll(".form-step")];
+      const prevStepButton = document.querySelector("#prevStepButton");
+      const nextStepButton = document.querySelector("#nextStepButton");
+      const onboardingStepLabel = document.querySelector("#onboardingStepLabel");
+      const onboardingStepTitle = document.querySelector("#onboardingStepTitle");
+      const progressFill = document.querySelector("#progressFill");
+      const reviewCard = document.querySelector("#reviewCard");
+      const formFeedback = document.querySelector("#formFeedback");
+      const installButton = document.querySelector("#installButton");
+      const installBanner = document.querySelector("#installBanner");
+      const installBannerButton = document.querySelector("#installBannerButton");
+      const dismissInstallBannerButton = document.querySelector("#dismissInstallBannerButton");
+      const mockInstallPrompt = document.querySelector("#mockInstallPrompt");
+      const mockInstallConfirmButton = document.querySelector("#mockInstallConfirmButton");
+      const mockInstallDismissButton = document.querySelector("#mockInstallDismissButton");
+      const navItems = [...document.querySelectorAll(".app-nav__item")];
+      const savedSummaryButton = document.querySelector("#savedSummaryButton");
+
+      let activeFilter = "all";
+      let activeBrandId = brands[0].id;
+      let activeView = "home";
+      let previousView = "home";
+      let onboardingStep = 0;
+      let scrollSyncFrame = null;
+      const onboardingStepTitles = ["Basics", "Experience", "Review"];
+      const savedBrandIds = new Set(loadSavedBrandIds());
+
+      function loadSavedBrandIds() {
+        try {
+          const storedValue = window.localStorage.getItem(SAVED_BRANDS_KEY);
+          if (!storedValue) {
+            return [];
+          }
+          const parsed = JSON.parse(storedValue);
+          const validBrandIds = new Set(brands.map((brand) => brand.id));
+          return Array.isArray(parsed) ? parsed.filter((brandId) => validBrandIds.has(brandId)) : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function persistSavedBrandIds() {
+        try {
+          window.localStorage.setItem(SAVED_BRANDS_KEY, JSON.stringify([...savedBrandIds]));
+        } catch (error) {}
+      }
+
+      function isInstallBannerDismissed() {
+        try {
+          return window.localStorage.getItem(INSTALL_BANNER_DISMISSED_KEY) === "true";
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function setInstallBannerDismissed(value) {
+        try {
+          window.localStorage.setItem(INSTALL_BANNER_DISMISSED_KEY, value ? "true" : "false");
+        } catch (error) {}
+      }
+
+      function getVisibleBrands() {
+        return activeFilter === "all" ? brands : brands.filter((brand) => brand.category === activeFilter);
+      }
+
+      function getBrandById(brandId) {
+        return brands.find((brand) => brand.id === brandId);
+      }
+
+      function updateSavedSummary() {
+        savedSummaryButton.querySelector("span").textContent = savedBrandIds.size ? `Saved ${savedBrandIds.size}` : "Save";
+      }
+
+      function updateButtonState(button, brandId) {
+        button.classList.toggle("is-saved", savedBrandIds.has(brandId));
+        button.textContent = savedBrandIds.has(brandId) ? "Saved" : "Save";
+      }
+
+      function render() {
+        const visibleBrands = getVisibleBrands();
+
+        if (!visibleBrands.some((brand) => brand.id === activeBrandId)) {
+          activeBrandId = visibleBrands[0]?.id ?? brands[0].id;
+        }
+
+        cardsRow.innerHTML = "";
+        pinLayer.innerHTML = "";
+
+        visibleBrands.forEach((brand, index) => {
+          const cardFragment = cardTemplate.content.cloneNode(true);
+          const card = cardFragment.querySelector(".brand-card");
+          const image = cardFragment.querySelector(".brand-card__image");
+          const tag = cardFragment.querySelector(".brand-card__tag");
+          const title = cardFragment.querySelector("h3");
+          const description = cardFragment.querySelector(".brand-card__description");
+          const distance = cardFragment.querySelector(".brand-card__distance");
+          const pickup = cardFragment.querySelector(".brand-card__pickup");
+          const saveButton = cardFragment.querySelector(".save-button");
+          const detailButton = cardFragment.querySelector(".card-link");
+
+          card.dataset.id = brand.id;
+          card.style.setProperty("--card-order", String(index));
+          image.style.background =
+            `radial-gradient(circle at top right, rgba(255,255,255,0.24), transparent 26%), linear-gradient(140deg, rgba(255,255,255,0.15), transparent), ${brand.accent}`;
+          tag.textContent = brand.category;
+          title.textContent = brand.name;
+          description.textContent = brand.description;
+          distance.textContent = brand.distance;
+          pickup.textContent = brand.pickup;
+          updateButtonState(saveButton, brand.id);
+
+          card.addEventListener("click", () => setActiveBrand(brand.id, { scrollCard: true }));
+          saveButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            toggleSaved(brand.id);
+          });
+          detailButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setActiveBrand(brand.id);
+            openDetailView(brand.id);
+          });
+
+          cardsRow.appendChild(cardFragment);
+
+          const pinFragment = pinTemplate.content.cloneNode(true);
+          const pin = pinFragment.querySelector(".map-pin");
+          const label = pinFragment.querySelector(".map-pin__label");
+
+          pin.dataset.id = brand.id;
+          pin.style.setProperty("--pin-order", String(index));
+          pin.style.left = `${brand.x}%`;
+          pin.style.top = `${brand.y}%`;
+          label.textContent = brand.name.split(" ")[0];
+          pin.addEventListener("click", () => setActiveBrand(brand.id, { scrollCard: true }));
+
+          pinLayer.appendChild(pinFragment);
+        });
+
+        updateActiveState();
+        renderDetail();
+        updateSavedSummary();
+      }
+
+      function updateActiveState() {
+        const cards = cardsRow.querySelectorAll(".brand-card");
+        const pins = pinLayer.querySelectorAll(".map-pin");
+
+        cards.forEach((card) => {
+          card.classList.toggle("is-active", card.dataset.id === activeBrandId);
+        });
+
+        pins.forEach((pin) => {
+          pin.classList.toggle("is-active", pin.dataset.id === activeBrandId);
+        });
+      }
+
+      function scrollActiveCardIntoView() {
+        const card = cardsRow.querySelector(`[data-id="${activeBrandId}"]`);
+        if (!card) {
+          return;
+        }
+
+        const isDesktop = window.matchMedia("(min-width: 1100px)").matches;
+        card.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: isDesktop ? "nearest" : "center",
+        });
+      }
+
+      function setActiveBrand(brandId, options = {}) {
+        const { scrollCard = false } = options;
+
+        if (!brandId) {
+          return;
+        }
+
+        activeBrandId = brandId;
+        updateActiveState();
+        renderDetail();
+
+        if (scrollCard) {
+          scrollActiveCardIntoView();
+        }
+      }
+
+      function renderDetail() {
+        const brand = getBrandById(activeBrandId);
+        if (!brand) {
+          return;
+        }
+
+        detailArt.style.background =
+          `radial-gradient(circle at top right, rgba(255,255,255,0.32), transparent 32%), ${brand.accent}`;
+        detailCategory.textContent = brand.category;
+        detailName.textContent = brand.name;
+        detailDescription.textContent = brand.description;
+        detailDistance.textContent = brand.distance;
+        detailPickup.textContent = brand.pickup;
+        detailArea.textContent = brand.area;
+        detailStory.textContent = brand.story;
+        detailHighlights.innerHTML = "";
+
+        brand.highlights.forEach((item) => {
+          const highlight = document.createElement("div");
+          highlight.className = "detail-highlight";
+          highlight.textContent = item;
+          detailHighlights.appendChild(highlight);
+        });
+
+        updateButtonState(detailSaveButton, brand.id);
+        visitButton.textContent =
+          brand.category === "pickup" ? "Reserve pickup" : brand.category === "fashion" ? "Book visit" : "Plan pickup";
+      }
+
+      function applyViewState() {
+        const isHome = activeView === "home";
+        const isDetail = activeView === "detail";
+        const isOnboarding = activeView === "onboarding";
+
+        homeView.classList.toggle("is-visible", isHome);
+        detailView.classList.toggle("is-visible", isDetail);
+        onboardingView.classList.toggle("is-visible", isOnboarding);
+        detailView.setAttribute("aria-hidden", String(!isDetail));
+        onboardingView.setAttribute("aria-hidden", String(!isOnboarding));
+
+        navItems.forEach((item) => {
+          item.classList.toggle("is-active", item.dataset.targetView === activeView);
+        });
+      }
+
+      function openDetailView(brandId) {
+        if (brandId) {
+          activeBrandId = brandId;
+          renderDetail();
+          updateActiveState();
+        }
+        activeView = "detail";
+        applyViewState();
+      }
+
+      function closeDetailView() {
+        activeView = "home";
+        applyViewState();
+        scrollActiveCardIntoView();
+      }
+
+      function openOnboardingView() {
+        previousView = activeView;
+        activeView = "onboarding";
+        applyViewState();
+        updateOnboardingStep(0);
+      }
+
+      function closeOnboardingView() {
+        activeView = previousView === "detail" ? "detail" : "home";
+        applyViewState();
+      }
+      function updateOnboardingStep(stepIndex) {
+        onboardingStep = Math.max(0, Math.min(stepIndex, formSteps.length - 1));
+
+        formSteps.forEach((step, index) => {
+          step.classList.toggle("is-visible", index === onboardingStep);
+        });
+
+        onboardingForm.classList.toggle("is-final-step", onboardingStep === formSteps.length - 1);
+        prevStepButton.disabled = onboardingStep === 0;
+        onboardingStepLabel.textContent = `Step ${onboardingStep + 1} of ${formSteps.length}`;
+        onboardingStepTitle.textContent = onboardingStepTitles[onboardingStep];
+        progressFill.style.width = `${((onboardingStep + 1) / formSteps.length) * 100}%`;
+        formFeedback.textContent = "";
+
+        if (onboardingStep === formSteps.length - 1) {
+          renderOnboardingReview();
+        }
+      }
+
+      function getStepFields(stepIndex) {
+        return [...formSteps[stepIndex].querySelectorAll("input, select, textarea")];
+      }
+
+      function validateStep(stepIndex) {
+        const fields = getStepFields(stepIndex);
+        let isValid = true;
+
+        fields.forEach((field) => {
+          const value = field.value.trim();
+          const fieldIsValid = field.type === "email" ? /\S+@\S+\.\S+/.test(value) : Boolean(value);
+          field.classList.toggle("is-invalid", !fieldIsValid);
+          if (!fieldIsValid) {
+            isValid = false;
+          }
+        });
+
+        formFeedback.textContent = isValid ? "" : "Please complete the highlighted fields before continuing.";
+        return isValid;
+      }
+
+      function renderOnboardingReview() {
+        const formData = new FormData(onboardingForm);
+        reviewCard.innerHTML = `
+          <div><strong>${formData.get("brandName") || "Brand name"}</strong></div>
+          <div>${formData.get("category") || "Category"} in ${formData.get("area") || "Neighborhood"}</div>
+          <div>${formData.get("description") || "Description will appear here."}</div>
+          <div>${formData.get("pickup") || "Pickup details"} | ${formData.get("highlight") || "Highlight"}</div>
+          <div>${formData.get("contactName") || "Contact"} | ${formData.get("email") || "Email"}</div>
+          <div>${formData.get("link") || "Link"}</div>
+        `;
+      }
+
+      function toggleSaved(brandId) {
+        if (savedBrandIds.has(brandId)) {
+          savedBrandIds.delete(brandId);
+        } else {
+          savedBrandIds.add(brandId);
+        }
+
+        persistSavedBrandIds();
+
+        const cardButton = cardsRow.querySelector(`[data-id="${brandId}"] .save-button`);
+        const brand = getBrandById(brandId);
+
+        if (cardButton) {
+          updateButtonState(cardButton, brandId);
+        }
+
+        if (brand && brand.id === activeBrandId) {
+          updateButtonState(detailSaveButton, brandId);
+        }
+
+        updateSavedSummary();
+      }
+
+      function showSplashScreen() {
+        window.setTimeout(() => {
+          splashScreen.classList.add("is-exiting");
+          window.setTimeout(() => {
+            document.body.classList.remove("is-loading");
+            splashScreen.classList.remove("is-visible", "is-exiting");
+          }, 420);
+        }, 1500);
+      }
+
+      function updateInstallUi() {
+        const dismissed = isInstallBannerDismissed();
+        installBanner.hidden = dismissed;
+        installButton.hidden = dismissed;
+      }
+
+      function openMockInstallPrompt(title, copy) {
+        mockInstallPrompt.querySelector("h3").textContent = title || "Install Mappit";
+        mockInstallPrompt.querySelector("p").textContent =
+          copy ||
+          "This standalone file cannot use a real browser install prompt, so this simulates the install flow. Add it to your device shortcuts or browser favorites for quick access.";
+        mockInstallPrompt.classList.add("is-visible");
+      }
+
+      function closeMockInstallPrompt() {
+        mockInstallPrompt.classList.remove("is-visible");
+      }
+
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+          filterButtons.forEach((chip) => chip.classList.toggle("is-active", chip === button));
+          render();
+        });
+      });
+
+      cardsRow.addEventListener("scroll", () => {
+        if (scrollSyncFrame || activeView === "detail") {
+          cancelAnimationFrame(scrollSyncFrame);
+        }
+
+        scrollSyncFrame = requestAnimationFrame(() => {
+          const cards = [...cardsRow.querySelectorAll(".brand-card")];
+          if (!cards.length || activeView === "detail") {
+            return;
+          }
+
+          const rowRect = cardsRow.getBoundingClientRect();
+          const isDesktop = window.matchMedia("(min-width: 1100px)").matches;
+          const targetPoint = isDesktop
+            ? rowRect.top + cardsRow.clientHeight * 0.2
+            : rowRect.left + cardsRow.clientWidth * 0.4;
+
+          let closestCard = cards[0];
+          let smallestDistance = Number.POSITIVE_INFINITY;
+
+          cards.forEach((card) => {
+            const rect = card.getBoundingClientRect();
+            const cardPoint = isDesktop ? rect.top : rect.left;
+            const distance = Math.abs(cardPoint - targetPoint);
+
+            if (distance < smallestDistance) {
+              smallestDistance = distance;
+              closestCard = card;
+            }
+          });
+
+          if (closestCard?.dataset.id && closestCard.dataset.id !== activeBrandId) {
+            activeBrandId = closestCard.dataset.id;
+            updateActiveState();
+            renderDetail();
+          }
+        });
+      });
+
+      backButton.addEventListener("click", closeDetailView);
+      closeDetailButton.addEventListener("click", closeDetailView);
+      detailSaveButton.addEventListener("click", () => toggleSaved(activeBrandId));
+      openOnboardingButton.addEventListener("click", openOnboardingView);
+      detailOnboardingButton.addEventListener("click", openOnboardingView);
+      onboardingBackButton.addEventListener("click", closeOnboardingView);
+
+      prevStepButton.addEventListener("click", () => updateOnboardingStep(onboardingStep - 1));
+
+      nextStepButton.addEventListener("click", () => {
+        if (validateStep(onboardingStep)) {
+          updateOnboardingStep(onboardingStep + 1);
+        }
+      });
+
+      onboardingForm.addEventListener("input", (event) => {
+        if (event.target.matches("input, select, textarea")) {
+          event.target.classList.remove("is-invalid");
+          if (onboardingStep === formSteps.length - 1) {
+            renderOnboardingReview();
+          }
+        }
+      });
+
+      onboardingForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!validateStep(onboardingStep)) {
+          return;
+        }
+
+        const formData = new FormData(onboardingForm);
+        const brandName = formData.get("brandName");
+        formFeedback.textContent = `${brandName} has been submitted for review.`;
+
+        window.setTimeout(() => {
+          onboardingForm.reset();
+          updateOnboardingStep(0);
+          formFeedback.textContent = "";
+          closeOnboardingView();
+        }, 900);
+      });
+
+      installButton.addEventListener("click", () => openMockInstallPrompt());
+      installBannerButton.addEventListener("click", () => openMockInstallPrompt());
+
+      dismissInstallBannerButton.addEventListener("click", () => {
+        setInstallBannerDismissed(true);
+        updateInstallUi();
+      });
+
+      mockInstallConfirmButton.addEventListener("click", () => {
+        setInstallBannerDismissed(true);
+        updateInstallUi();
+        closeMockInstallPrompt();
+      });
+
+      mockInstallDismissButton.addEventListener("click", closeMockInstallPrompt);
+
+      savedSummaryButton.addEventListener("click", () => {
+        openMockInstallPrompt(
+          "Saved brands",
+          savedBrandIds.size
+            ? `You have ${savedBrandIds.size} saved ${savedBrandIds.size === 1 ? "brand" : "brands"} stored locally on this device.`
+            : "You do not have any saved brands yet. Tap Save on a card or brand detail screen."
+        );
+      });
+
+      visitButton.addEventListener("click", () => {
+        const brand = getBrandById(activeBrandId);
+        window.alert(`${brand.name}: ${brand.pickup}`);
+      });
+
+      navItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          const targetView = item.dataset.targetView;
+
+          if (targetView === "home") {
+            activeView = "home";
+            applyViewState();
+            scrollActiveCardIntoView();
+            return;
+          }
+
+          if (targetView === "detail") {
+            openDetailView(activeBrandId);
+            return;
+          }
+
+          openOnboardingView();
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeMockInstallPrompt();
+        }
+      });
+
+      render();
+      applyViewState();
+      updateOnboardingStep(0);
+      updateInstallUi();
+      showSplashScreen();
+    </script>
+  </body>
+</html>
