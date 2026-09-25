@@ -34,7 +34,7 @@ python -m http.server 8000
 
 Navigate to `http://localhost:8000` on your phone or browser, and select "Add to Home Screen" to see the full PWA experience!
 
-## 🧠 Hackathon Roadmap
+## 🧠 Project Roadmap
 - **Geo-location Hooks:** Implementing live proximity sorting based on the user's GPS data.
 - **Mapbox API Integration:** Replacing static mapping with custom styled Mapbox GL layers.
 - **Brand Parsing AI:** Scraping indie directories to automatically populate points of interest on the map.
